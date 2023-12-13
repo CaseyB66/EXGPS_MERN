@@ -34,17 +34,19 @@ recordRoutes.route("/record").get(async function (req, res) {
 });
  
 // This section will help you get a single record by id
-recordRoutes.route("/record/:id").get(function (req, res) {
- let db_connect = dbo.getDb();
+recordRoutes.route("/record/:id").get(async function (req, res) {
  console.log(`record.js getId: id = ${req.params.id}`);
  let myquery = { _id: new ObjectId(req.params.id) };
- db_connect
+ const dta = await dbo.getDb()
    .collection("tracks")
-   .findOne(myquery, function (err, result) {
-     if (err) throw err;
-     res.json(result);
+   .findOne(myquery);
+   if (!dta) {
+       console.log(`record.js get by id found no data`);
+     } else {
+      console.log(`record.js get returned:${JSON.stringify(dta)}`);
+      res.json(dta);
+     }
    });
-});
  
 // This section will help you create a new record.
 recordRoutes.route("/record/add").post(function (req, response) {

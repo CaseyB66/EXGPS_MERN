@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
+import DateTimePicker from 'react-datetime-picker';
+
 export default function Edit() {
   const dtText = new Intl.DateTimeFormat('en-US').format(new Date(),
    {
@@ -13,7 +15,16 @@ export default function Edit() {
    });    
   const [form, setForm] = useState({
     filename: "",
-    datetime: dtText,
+    datetime: new Date,
+    mode: "bike", // bike xbike, mtnbike, indrbike, UNKNWN
+    lat: 0.0,
+    long: 0.0,
+    dist_meter: 0.0,
+    tracks: [],
+  });
+  const [tempForm, setTempForm] = useState({
+    filename: "",
+    datetime: new Date(),
     mode: "bike", // bike xbike, mtnbike, indrbike, UNKNWN
     lat: 0.0,
     long: 0.0,
@@ -25,47 +36,45 @@ export default function Edit() {
   useEffect(() => {
     async function fetchData() {
       const id = params.id.toString();
-      const response = await fetch(`http://localhost:3648/record/${params.id.toString()}`);
-      if (!response.ok) {
-        const message = `An error has occurred: ${response.statusText}`;
-        window.alert(message);
-        return;
-      }
-      const record = await response.json();
-      if (!record) {
-        window.alert(`Record with id ${id} not found`);
-        navigate("/");
-        return;
-      }
-      setForm(record);
+      const theUrl = `http://localhost:3648/record/${params.id}`;
+      console.log('fetchData id ',id,' ',theUrl);
+      await fetch(theUrl).then((response)=>{
+        if (response.status === 404){
+          // setNotFound(true);
+          console.log('fetchData returned 404');
+        }
+        return response.json();
+      }).then((data) => {
+        console.log('fetchData found valid response ');
+        console.log('fetchData record ',data.toString());
+        setForm(data);
+        setTempForm(data);
+        console.log('fetchData found datetime = ',tempForm.datetime)
+      });
+
     }
     fetchData();
     return;
   }, [params.id, navigate]);
-  // These methods will update the state properties.
-  function updateForm(value) {
-    return setForm((prev) => {
-      return {...prev, ...value};
-    });
-  }
   async function onSubmit(e) {
     e.preventDefault();
     const editedTrack = {
-      filename: form.filename,
-      datetime: new Intl.DateTimeFormat('en-US').format(new Date(form.datetime),
-                 {
-                   hour12: true,
-                   dayPeriod: "short",
-                   year: "numeric",
-                   month: "short",
-                   day: "numeric",
-                   hour: "numeric",
-                   minute: "numeric"
-                 }),
-      mode: form.mode, // bike xbike, mtnbike, indrbike, UNKNWN
-      lat: form.lat,
-      long: form.long,
-      dist_meter: form.dist_meter,
+      filename: tempForm.filename,
+      datetime: tempForm.datetime,
+//      datetime: new Intl.DateTimeFormat('en-US').format(new Date(tempForm.datetime),
+//        {
+//          hour12: true,
+//          dayPeriod: "short",
+//          year: "numeric",
+//          month: "short",
+//          day: "numeric",
+//          hour: "numeric",
+//          minute: "numeric"
+//        }),
+      mode: tempForm.mode, // bike xbike, mtnbike, indrbike, UNKNWN
+      lat: tempForm.lat,
+      long: tempForm.long,
+      dist_meter: tempForm.dist_meter,
     };
     // This will send a post request to update the data in the database.
     await fetch(`http://localhost:3648/update/${params.id}`, {
@@ -88,28 +97,23 @@ export default function Edit() {
               type="text"
               className="form-control"
               id="filename"
-              value={form.filename}
-              onChange={(e) => updateForm({filename: e.target.value})}
+              value={tempForm.filename}
+              onChange={(e) => {
+                setTempForm({...tempForm, filename: e.target.value})
+              }}
               />
           </div>
           <div className="form-group">
             <label htmlFor="datetime">DateTime: </label>
-            <input
-              type="date"
+             <DateTimePicker 
               className="form-control"
               id="datetime"
-              value={new Intl.DateTimeFormat('en-US').format(new Date(form.datetime),
-                 {
-                   hour12: true,
-                   dayPeriod: "short",
-                   year: "numeric",
-                   month: "short",
-                   day: "numeric",
-                   hour: "numeric",
-                   minute: "numeric"
-                 })}
-              onChange={(e) => updateForm({datetime: e.target.value})}
-              />
+              disableClock="true"
+              value={tempForm.datetime}
+              onChange={(e) => {
+                setTempForm({...tempForm, datetime: e.target.value})
+              }}
+             />
           </div>
           <div className="form-group">
             <div className="form-check form-check-inline">
@@ -119,8 +123,10 @@ export default function Edit() {
                 name="modeOptions"
                 id="modeBike"
                 value="Bike"
-                checked={form.mode === "Bike"}
-                onChange={(e) => updateForm({mode: e.target.value})}
+                checked={tempForm.mode === "Bike"}
+                onChange={(e) => {
+                setTempForm({...tempForm, mode: e.target.value})
+                }}
                 />
               <label htmlFor="modeBike" className="form-check-label">Intern</label>
             </div>
@@ -131,8 +137,10 @@ export default function Edit() {
                 name="modeOptions"
                 id="modeXBike"
                 value="xBike"
-                checked={form.mode === "xBike"}
-                onChange={(e) => updateForm({mode: e.target.value})}
+                checked={tempForm.mode === "xBike"}
+                onChange={(e) => {
+                setTempForm({...tempForm, mode: e.target.value})
+                }}
                 />
               <label htmlFor="modeXBike" className="form-check-label">xBike</label>
             </div>
@@ -143,8 +151,10 @@ export default function Edit() {
                 name="modeOptions"
                 id="modeIndrBike"
                 value="IndrBike"
-                checked={form.mode === "IndrBike"}
-                onChange={(e) => updateForm({mode: e.target.value})}
+                checked={tempForm.mode === "IndrBike"}
+                onChange={(e) => {
+                setTempForm({...tempForm, mode: e.target.value})
+                }}
                 />
               <label htmlFor="modeIndrBike" className="form-check-label">IndrBike</label>
             </div>
@@ -155,8 +165,10 @@ export default function Edit() {
                 name="modeOptions"
                 id="modeMtnBike"
                 value="MtnBike"
-                checked={form.mode === "MtnBike"}
-                onChange={(e) => updateForm({mode: e.target.value})}
+                checked={tempForm.mode === "MtnBike"}
+                onChange={(e) => {
+                setTempForm({...tempForm, mode: e.target.value})
+                }}
                 />
               <label htmlFor="modeMtnBike" className="form-check-label">MtnBike</label>
             </div>
@@ -167,8 +179,10 @@ export default function Edit() {
                 name="modeOptions"
                 id="modeUNKNWN"
                 value="UNKNWN"
-                checked={form.mode === "UNKNWN"}
-                onChange={(e) => updateForm({mode: e.target.value})}
+                checked={tempForm.mode === "UNKNWN"}
+                onChange={(e) => {
+                setTempForm({...tempForm, mode: e.target.value})
+                }}
                 />
               <label htmlFor="modeUNKNWN" className="form-check-label">UNKNWN</label>
             </div>
@@ -179,8 +193,10 @@ export default function Edit() {
               type="number" min="-360.0" max='360.0' step="0.001"
               className="form-control"
               id="lat"
-              value={form.lat}
-              onChange={(e) => updateForm({lat: e.target.value})}
+              value={tempForm.lat}
+              onChange={(e) => {
+                setTempForm({...tempForm, lat: e.target.value})
+                }}
               />
           </div>
           <div className="form-group">
@@ -189,8 +205,10 @@ export default function Edit() {
               type="number" min="-360.0" max='360.0' step="0.001"
               className="form-control"
               id="long"
-              value={form.long}
-              onChange={(e) => updateForm({long: e.target.value})}
+              value={tempForm.long}
+              onChange={(e) => {
+                setTempForm({...tempForm, long: e.target.value})
+                }}
               />
           </div>
           <div className="form-group">
@@ -199,8 +217,10 @@ export default function Edit() {
               type="number" min="0.0" max='500000.0' step="0.01"
               className="form-control"
               id="dist_m"
-              value={form.dist_meter}
-              onChange={(e) => updateForm({dist_meter: e.target.value})}
+              value={tempForm.dist_meter}
+              onChange={(e) => {
+                setTempForm({...tempForm, dist_meter: e.target.value})
+                }}
               />
           </div>
       
